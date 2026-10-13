@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Library Books Rehoming</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+/* Layout: a catalog of shelf cards in a responsive grid, a sticky "your picks" bar, and an admin ledger tab. */
+:root {
+  --paper: #f5f6f8;        /* cool near-white, a hint of the cloth-blue */
+  --card: #ffffff;
+  --ink: #1b2538;          /* Encyclopaedia Judaica cloth blue, darkened */
+  --ink-soft: #4d586d;
+  --rule: #d6dae2;
+  --accent: #8a2230;       /* Soncino oxblood */
+  --accent-ink: #ffffff;
+  --accent-soft: #f4e6e8;
+  --gold: #a98a3f;         /* spine gilt, for labels */
+  --ok: #2f6b4f;
+  --ok-soft: #e3efe8;
+  --warn: #8a5a12;
+  --warn-soft: #f6ecd8;
+  --shadow: 0 1px 2px rgba(27,37,56,.08), 0 6px 18px rgba(27,37,56,.06);
+  --display: "Libre Caslon Text", Georgia, "Times New Roman", serif;
+  --body: "Source Sans 3", "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #141a26; --card: #1d2535; --ink: #e8ebf1; --ink-soft: #a7b0c2; --rule: #313b50;
+    --accent: #d5707c; --accent-ink: #1a0b0e; --accent-soft: #3a2228; --gold: #c9ad62;
+    --ok: #7fc39e; --ok-soft: #1f3a2d; --warn: #e0b365; --warn-soft: #3b2f17;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.3);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #141a26; --card: #1d2535; --ink: #e8ebf1; --ink-soft: #a7b0c2; --rule: #313b50;
+  --accent: #d5707c; --accent-ink: #1a0b0e; --accent-soft: #3a2228; --gold: #c9ad62;
+  --ok: #7fc39e; --ok-soft: #1f3a2d; --warn: #e0b365; --warn-soft: #3b2f17;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.3);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.45; margin: 0; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 28px 120px; padding-inline: 20px; }
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, label:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button { font: inherit; cursor: pointer; }
+h1, h2, h3 { font-family: var(--display); font-weight: 400; text-wrap: balance; margin: 0; }
+.eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); font-weight: 600; }
+header.top { display: grid; gap: 14px; margin-bottom: 22px; }
+header.top h1 { font-size: clamp(30px, 4.5vw, 44px); line-height: 1.1; }
+header.top p.lede { max-width: 62ch; color: var(--ink-soft); margin: 0; font-size: 17px; }
+.stats { display: flex; flex-wrap: wrap; gap: 8px 22px; font-variant-numeric: tabular-nums; color: var(--ink-soft); font-size: 14px; }
+.stats b { color: var(--ink); font-weight: 600; }
+nav.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--rule); margin-bottom: 18px; }
+nav.tabs button { background: none; border: 0; padding: 10px 14px; color: var(--ink-soft); border-bottom: 2px solid transparent; margin-bottom: -1px; font-weight: 600; }
+nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px; }
+.controls input[type="search"] { flex: 1 1 240px; min-width: 0; padding: 9px 12px; border: 1px solid var(--rule); border-radius: 6px; background: var(--card); color: var(--ink); font: inherit; }
+.controls select { padding: 9px 10px; border: 1px solid var(--rule); border-radius: 6px; background: var(--card); color: var(--ink); font: inherit; }
+.toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; color: var(--ink-soft); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+.chip { border: 1px solid var(--rule); background: var(--card); color: var(--ink-soft); border-radius: 999px; padding: 4px 11px; font-size: 13.5px; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
+.card { background: var(--card); border: 1px solid var(--rule); border-radius: 8px; box-shadow: var(--shadow); display: grid; grid-template-columns: 112px minmax(0, 1fr); overflow: hidden; }
+.card.reserved-out { opacity: .78; }
+.card .pic { background: var(--paper); border-right: 1px solid var(--rule); display: flex; align-items: center; justify-content: center; padding: 10px; min-height: 180px; }
+.card .pic img { max-width: 100%; max-height: 190px; width: auto; height: auto; object-fit: contain; border-radius: 2px; display: block; }
+.card .body { padding: 12px 14px 12px; display: grid; gap: 7px; align-content: start; min-width: 0; }
+.card h3 { font-size: 17px; line-height: 1.25; }
+.card .author { font-size: 14.5px; color: var(--ink); }
+.card .meta { font-size: 13.5px; color: var(--ink-soft); }
+.card .notes { font-size: 13.5px; color: var(--ink-soft); font-style: italic; }
+.card .links { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13.5px; }
+.card .cat { font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--gold); font-weight: 600; }
+.pick { display: flex; align-items: center; gap: 8px; margin-top: 4px; padding-top: 10px; border-top: 1px dashed var(--rule); font-weight: 600; font-size: 14.5px; }
+.pick input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
+.pick input:disabled + span { color: var(--ink-soft); font-weight: 400; }
+.badge { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
+.badge.taken { background: var(--accent-soft); color: var(--accent); }
+.badge.left { background: var(--ok-soft); color: var(--ok); }
+.badge.mine { background: var(--ok-soft); color: var(--ok); }
+.release { background: none; border: 0; color: var(--accent); padding: 0; font-size: 13.5px; text-decoration: underline; }
+.empty { padding: 40px 16px; text-align: center; color: var(--ink-soft); border: 1px dashed var(--rule); border-radius: 8px; }
+/* picks bar */
+.bar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--ink); color: var(--paper); padding: 12px 20px; padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); display: none; z-index: 20; box-shadow: 0 -4px 20px rgba(0,0,0,.18); }
+.bar.on { display: block; }
+.bar .in { max-width: 1240px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; }
+.bar .count { font-variant-numeric: tabular-nums; font-weight: 600; }
+.bar .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { border: 1px solid transparent; border-radius: 6px; padding: 9px 16px; font-weight: 600; font-size: 15px; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); }
+.btn.ghost { background: transparent; color: var(--paper); border-color: rgba(255,255,255,.35); }
+.btn.quiet { background: var(--paper); color: var(--ink); border-color: var(--rule); }
+.btn:disabled { opacity: .55; cursor: default; }
+/* reserve panel */
+.scrim { position: fixed; inset: 0; background: rgba(10,14,22,.55); display: none; z-index: 30; align-items: flex-end; justify-content: center; padding: 16px; }
+.scrim.on { display: flex; }
+@media (min-width: 640px) { .scrim { align-items: center; } }
+.panel { background: var(--card); color: var(--ink); border-radius: 10px; max-width: 560px; width: 100%; max-height: calc(100% - 32px); overflow: auto; padding: 22px; display: grid; gap: 14px; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+.panel h2 { font-size: 24px; }
+.panel ul { margin: 0; padding-left: 18px; font-size: 14.5px; color: var(--ink-soft); max-height: 160px; overflow: auto; }
+.field { display: grid; gap: 5px; font-size: 14px; font-weight: 600; }
+.field input { padding: 10px 12px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink); font: inherit; font-weight: 400; }
+.panel .row { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.note { font-size: 13.5px; color: var(--ink-soft); }
+.alert { border-radius: 6px; padding: 10px 12px; font-size: 14px; }
+.alert.warn { background: var(--warn-soft); color: var(--warn); }
+.alert.ok { background: var(--ok-soft); color: var(--ok); }
+.alert.err { background: var(--accent-soft); color: var(--accent); }
+textarea.copy { width: 100%; min-height: 120px; font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink); padding: 8px; }
+/* admin */
+.admin-head { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.admin-head .sorts { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 14px; color: var(--ink-soft); }
+.tablewrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 8px; background: var(--card); }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; min-width: 640px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); font-weight: 600; background: var(--paper); position: sticky; top: 0; }
+th button { background: none; border: 0; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; padding: 0; }
+th button[aria-sort]:not([aria-sort="none"]) { color: var(--ink); }
+tr.group td { background: var(--paper); font-family: var(--display); font-size: 16px; color: var(--ink); }
+td.when { font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--ink-soft); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: 6px; font-size: 14.5px; z-index: 40; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.toast.on { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+@media (max-width: 420px) { .card { grid-template-columns: 92px minmax(0,1fr); } .card .pic { min-height: 150px; } }
+</style>
+<style>
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+.gate { position: fixed; inset: 0; background: var(--paper); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.gate form { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 28px; max-width: 420px; width: 100%; display: grid; gap: 14px; box-shadow: var(--shadow); }
+.gate h1 { font-size: 28px; }
+footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--rule); font-size: 13.5px; color: var(--ink-soft); display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: space-between; }
+footer button { background: none; border: 0; color: var(--ink-soft); text-decoration: underline; padding: 0; font-size: 13.5px; }
+.loading { font-size: 13.5px; color: var(--ink-soft); }
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate">
+  <form id="gate-form">
+    <div class="eyebrow">Judaica reference collection</div>
+    <h1>Library Books Rehoming</h1>
+    <p class="note" style="margin:0">This catalog is for invited friends and colleagues. Enter the passphrase from the invitation to open it.</p>
+    <div class="field"><label for="gate-pass">Passphrase</label><input id="gate-pass" type="password" autocomplete="off" required></div>
+    <div id="gate-err"></div>
+    <div class="row"><button type="submit" class="btn primary">Open the catalog</button></div>
+  </form>
+</div>
+
+<div class="wrap" id="app" hidden>
+  <header class="top">
+    <div class="eyebrow">Judaica reference collection · books looking for new homes</div>
+    <h1>Library Books Rehoming</h1>
+    <p class="lede">These books are leaving the library shelves and are free to a good home. Browse the catalog, tick the ones you would like, then enter your name and email to reserve them. Multi-volume sets go as a set.</p>
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Views">
+    <button role="tab" id="tab-catalog" aria-selected="true" aria-controls="view-catalog">Catalog</button>
+    <button role="tab" id="tab-admin" aria-selected="false" aria-controls="view-admin" hidden>Admin: reservations</button>
+  </nav>
+
+  <section id="view-catalog" role="tabpanel" aria-labelledby="tab-catalog">
+    <div id="access-note"></div>
+    <div class="controls">
+      <input type="search" id="q" placeholder="Search title, author, publisher…" aria-label="Search the catalog">
+      <select id="sort" aria-label="Sort">
+        <option value="shelf">Shelf order</option>
+        <option value="title">Title A–Z</option>
+        <option value="author">Author A–Z</option>
+        <option value="year">Year published</option>
+      </select>
+      <label class="toggle"><input type="checkbox" id="only-available"> Available only</label>
+      <span class="loading" id="sync"></span>
+    </div>
+    <div class="chips" id="chips" role="group" aria-label="Filter by category"></div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section id="view-admin" role="tabpanel" aria-labelledby="tab-admin" hidden>
+    <div class="admin-head">
+      <div>
+        <h2 style="font-size:24px">Reservations</h2>
+        <div class="note" id="admin-summary"></div>
+      </div>
+      <div class="sorts">
+        <label>Sort by
+          <select id="admin-sort">
+            <option value="person">Person (grouped)</option>
+            <option value="when">Most recent</option>
+            <option value="book">Book title</option>
+          </select>
+        </label>
+        <a class="btn quiet" id="sheet-link" href="#" target="_blank" rel="noopener" hidden>Open the Google Sheet</a>
+        <button class="btn quiet" id="csv">Download CSV</button>
+        <button class="btn quiet" id="copy-all">Copy as text</button>
+      </div>
+    </div>
+    <div class="tablewrap"><table id="admin-table"><thead><tr><th>Person</th><th>Email</th><th>Book</th><th>Reserved</th><th></th></tr></thead><tbody id="admin-body"></tbody></table></div>
+  </section>
+
+  <footer>
+    <span id="footer-contact"></span>
+    <button type="button" id="admin-login">Admin sign-in</button>
+  </footer>
+</div>
+
+<div class="bar" id="bar">
+  <div class="in">
+    <div><span class="count" id="bar-count">0 selected</span> <span id="bar-titles" class="note" style="color:inherit;opacity:.8"></span></div>
+    <div class="btns">
+      <button class="btn ghost" id="bar-clear">Clear</button>
+      <button class="btn primary" id="bar-reserve">Reserve selected</button>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="scrim" role="dialog" aria-modal="true" aria-labelledby="panel-title">
+  <form class="panel" id="panel">
+    <h2 id="panel-title">Reserve these books</h2>
+    <ul id="panel-list"></ul>
+    <div id="panel-mode"></div>
+    <div class="field"><label for="name">Your name</label><input id="name" name="name" autocomplete="name" required maxlength="80"></div>
+    <div class="field"><label for="email">Your email</label><input id="email" name="email" type="email" autocomplete="email" required maxlength="120"></div>
+    <p class="note">Your first name appears on the card so others know a book is spoken for. Your email is only seen by the person running the giveaway.</p>
+    <div id="panel-status"></div>
+    <div class="row">
+      <button type="button" class="btn quiet" id="panel-cancel">Back</button>
+      <button type="submit" class="btn primary" id="panel-go">Confirm reservation</button>
+    </div>
+  </form>
+</div>
+
+<div class="scrim" id="admin-scrim" role="dialog" aria-modal="true" aria-labelledby="admin-title">
+  <form class="panel" id="admin-form">
+    <h2 id="admin-title">Admin sign-in</h2>
+    <p class="note" style="margin:0">Enter the admin key from Code.gs to see emails and manage reservations.</p>
+    <div class="field"><label for="admin-key">Admin key</label><input id="admin-key" type="password" autocomplete="off" required></div>
+    <div id="admin-err"></div>
+    <div class="row"><button type="button" class="btn quiet" id="admin-cancel">Cancel</button><button type="submit" class="btn primary">Sign in</button></div>
+  </form>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="config.js"></script>
+<script type="application/json" id="books-data">[{"id":"midrash-rabbah-soncino","title":"Midrash Rabbah","author":"Translated under the editorship of Rabbi Dr. H. Freedman and Maurice Simon","publisher":"Soncino Press","year":"1939 (this printing 1983)","format":"10-volume set, red leather-look hardcovers","notes":"Complete set: Genesis I–II, Exodus, Leviticus, Numbers I–II, Deuteronomy/Lamentations, Ruth/Ecclesiastes, Esther/Song of Songs, Index.","category":"Rabbinic texts","copies":1,"photo":"IMG_2974","cover":"covers/midrash-rabbah-soncino.jpg","ol_key":"/works/OL20961771W"},{"id":"kitzur-shulchan-aruch-metsudah","title":"Kitzur Shulchan Aruch (Metsudah edition)","author":"Rabbi Shlomo Ganzfried; translated by Rabbi Avrohom Davis","publisher":"Metsudah Publications","year":"1996","format":"2 volumes in slipcase, Hebrew/English","notes":"Linear Hebrew-English translation of the Code of Jewish Law.","category":"Rabbinic texts","copies":1,"photo":"IMG_2974","cover":null,"ol_key":"/works/OL34580583W"},{"id":"goodman-rosh-hashanah","title":"The Rosh Hashanah Anthology","author":"Philip Goodman","publisher":"Jewish Publication Society (JPS)","year":"1970","format":"Hardcover","notes":"Part of the JPS Holiday Anthologies series.","category":"Holidays","copies":1,"photo":"IMG_2975","cover":"covers/goodman-rosh-hashanah.jpg","ol_key":"/works/OL4833610W"},{"id":"goodman-yom-kippur","title":"The Yom Kippur Anthology","author":"Philip Goodman","publisher":"Jewish Publication Society (JPS)","year":"1971","format":"Paperback","notes":"JPS Holiday Anthologies series.","category":"Holidays","copies":2,"photo":"IMG_2975","cover":"covers/goodman-yom-kippur.jpg","ol_key":"/works/OL20166476W"},{"id":"goodman-sukkot","title":"The Sukkot and Simhat Torah Anthology","author":"Philip Goodman","publisher":"Jewish Publication Society (JPS)","year":"1973","format":"Paperback","notes":"JPS Holiday Anthologies series.","category":"Holidays","copies":1,"photo":"IMG_2975","cover":null,"ol_key":"/works/OL20166483W"},{"id":"goodman-passover","title":"The Passover Anthology","author":"Philip Goodman","publisher":"Jewish Publication Society (JPS)","year":"1961","format":"Paperback","notes":"JPS Holiday Anthologies series.","category":"Holidays","copies":2,"photo":"IMG_2975","cover":"covers/goodman-passover.jpg","ol_key":"/works/OL20166468W"},{"id":"goodman-shavuot","title":"The Shavuot Anthology","author":"Philip Goodman","publisher":"Jewish Publication Society (JPS)","year":"1974","format":"Paperback","notes":"JPS Holiday Anthologies series.","category":"Holidays","copies":2,"photo":"IMG_2975","cover":null,"ol_key":"/works/OL20166506W"},{"id":"goodman-hanukkah","title":"The Hanukkah Anthology","author":"Philip Goodman","publisher":"Jewish Publication Society (JPS)","year":"1976","format":"Hardcover","notes":"JPS Holiday Anthologies series.","category":"Holidays","copies":1,"photo":"IMG_2975","cover":"covers/goodman-hanukkah.jpg","ol_key":"/works/OL8586131W"},{"id":"goodman-purim","title":"The Purim Anthology","author":"Philip Goodman","publisher":"Jewish Publication Society (JPS)","year":"1949","format":"Paperback","notes":"JPS Holiday Anthologies series.","category":"Holidays","copies":2,"photo":"IMG_2975","cover":"covers/goodman-purim.jpg","ol_key":"/works/OL4833615W"},{"id":"jewish-dietary-laws","title":"The Jewish Dietary Laws","author":"Samuel H. Dresner and Seymour Siegel","publisher":"Rabbinical Assembly / United Synagogue","year":"1982 (revised ed.)","format":"Paperback","notes":"Their meaning for our time, with a guide to observance.","category":"Jewish practice","copies":1,"photo":"IMG_2976","cover":"covers/jewish-dietary-laws.jpg","ol_key":"/works/OL3456788W"},{"id":"encyclopedia-jewish-symbols","title":"The Encyclopedia of Jewish Symbols","author":"Ellen Frankel and Betsy Platkin Teutsch","publisher":"Jason Aronson","year":"1992","format":"Hardcover","notes":"","category":"Reference","copies":1,"photo":"IMG_2976","cover":"covers/encyclopedia-jewish-symbols.jpg","ol_key":"/works/OL2919302W"},{"id":"gates-of-the-seasons","title":"Gates of the Seasons: A Guide to the Jewish Year","author":"Edited by Peter S. Knobel","publisher":"Central Conference of American Rabbis (CCAR)","year":"1983","format":"Hardcover","notes":"Reform guide to the holidays and festivals.","category":"Jewish practice","copies":2,"photo":"IMG_2976","cover":"covers/gates-of-the-seasons.jpg","ol_key":"/works/OL8509806W"},{"id":"gates-of-understanding","title":"Gates of Understanding: Essays and Notes to Shaarei Tefillah","author":"Edited by Lawrence A. Hoffman","publisher":"CCAR / UAHC","year":"1977","format":"Paperback","notes":"Companion commentary to Gates of Prayer.","category":"Liturgy","copies":1,"photo":"IMG_2976","cover":"covers/gates-of-understanding.jpg","ol_key":"/works/OL17845639W"},{"id":"gates-of-mitzvah","title":"Gates of Mitzvah: A Guide to the Jewish Life Cycle","author":"Edited by Simeon J. Maslin","publisher":"Central Conference of American Rabbis (CCAR)","year":"1979","format":"Paperback","notes":"","category":"Jewish practice","copies":1,"photo":"IMG_2976","cover":"covers/gates-of-mitzvah.jpg","ol_key":"/works/OL16447071W"},{"id":"doorposts-of-your-house","title":"On the Doorposts of Your House: Prayers and Ceremonies for the Jewish Home","author":"Edited by Chaim Stern","publisher":"Central Conference of American Rabbis (CCAR)","year":"1994","format":"Hardcover","notes":"Al Mezuzot Beitecha.","category":"Liturgy","copies":1,"photo":"IMG_2976","cover":"covers/doorposts-of-your-house.jpg","ol_key":"/works/OL6334278W"},{"id":"gates-of-prayer-shabbat","title":"Gates of Prayer for Shabbat","author":"Central Conference of American Rabbis","publisher":"CCAR Press","year":"1992","format":"Hardcover, gender-inclusive edition","notes":"","category":"Liturgy","copies":1,"photo":"IMG_2976","cover":"covers/gates-of-prayer-shabbat.jpg","ol_key":"/works/OL6334289W"},{"id":"haftarah-commentary-plaut","title":"The Haftarah Commentary","author":"W. Gunther Plaut, translation by Chaim Stern","publisher":"UAHC Press","year":"1996","format":"Hardcover","notes":"Companion to The Torah: A Modern Commentary.","category":"Bible & commentary","copies":2,"photo":"IMG_2976","cover":"covers/haftarah-commentary-plaut.jpg","ol_key":"/works/OL8453221W"},{"id":"passover-haggadah-wiesel","title":"A Passover Haggadah","author":"Elie Wiesel, illustrated by Mark Podwal","publisher":"Simon & Schuster","year":"1993","format":"Paperback","notes":"","category":"Holidays","copies":1,"photo":"IMG_2976","cover":"covers/passover-haggadah-wiesel.jpg","ol_key":"/works/OL14856814W"},{"id":"teaching-tefilah","title":"Teaching Tefilah: Insights and Activities on Prayer","author":"Bruce Kadden and Barbara Binder Kadden","publisher":"A.R.E. Publishing / Behrman House","year":"2004 (revised ed.)","format":"Paperback","notes":"Classroom resource for Jewish educators.","category":"Education","copies":1,"photo":"IMG_2976","cover":"covers/teaching-tefilah.jpg","ol_key":"/works/OL3536712W"},{"id":"book-of-jewish-holidays","title":"The Book of Jewish Holidays","author":"Ruth Kozodoy","publisher":"Behrman House","year":"1981","format":"Paperback","notes":"","category":"Holidays","copies":1,"photo":"IMG_2976","cover":"covers/book-of-jewish-holidays.jpg","ol_key":"/works/OL2623270W"},{"id":"encyclopedia-jewish-american-popular-culture","title":"Encyclopedia of Jewish American Popular Culture","author":"Edited by Jack R. Fischel","publisher":"Greenwood Press","year":"2009","format":"Hardcover","notes":"","category":"Reference","copies":1,"photo":"IMG_2976","cover":"covers/encyclopedia-jewish-american-popular-culture.jpg","ol_key":"/works/OL18349704W"},{"id":"antisemitism-levy","title":"Antisemitism: A Historical Encyclopedia of Prejudice and Persecution","author":"Edited by Richard S. Levy","publisher":"ABC-CLIO","year":"2005","format":"2-volume hardcover set","notes":"","category":"Reference","copies":1,"photo":"IMG_2976","cover":null,"ol_key":null},{"id":"antisemitism-chanes","title":"Antisemitism: A Reference Handbook","author":"Jerome A. Chanes","publisher":"ABC-CLIO (Contemporary World Issues)","year":"2004","format":"Hardcover","notes":"","category":"Reference","copies":1,"photo":"IMG_2976","cover":"covers/antisemitism-chanes.jpg","ol_key":"/works/OL8601923W"},{"id":"talmud-steinsaltz-reference-guide","title":"The Talmud: The Steinsaltz Edition — A Reference Guide","author":"Rabbi Adin Steinsaltz","publisher":"Random House","year":"1989","format":"Hardcover with dust jacket","notes":"","category":"Rabbinic texts","copies":1,"photo":"IMG_2977","cover":"covers/talmud-steinsaltz-reference-guide.jpg","ol_key":"/works/OL8036516W"},{"id":"book-of-legends","title":"The Book of Legends / Sefer Ha-Aggadah: Legends from the Talmud and Midrash","author":"Hayim Nahman Bialik and Yehoshua Hana Ravnitzky; translated by William G. Braude","publisher":"Schocken Books","year":"1992","format":"Hardcover with dust jacket","notes":"","category":"Rabbinic texts","copies":1,"photo":"IMG_2977","cover":"covers/book-of-legends.jpg","ol_key":"/works/OL18219557W"},{"id":"legends-of-the-jews-7vol","title":"The Legends of the Jews (7-volume edition, missing vol. IV)","author":"Louis Ginzberg; translated by Henrietta Szold and Paul Radin","publisher":"Jewish Publication Society (JPS)","year":"1909–1938 (later printing)","format":"6 of 7 volumes: I, II, III, V, VI, VII (Index)","notes":"Volume IV is not on the shelf.","category":"Rabbinic texts","copies":1,"photo":"IMG_2977","cover":"covers/legends-of-the-jews-7vol.jpg","ol_key":"/works/OL2741734W"},{"id":"legends-of-the-jews-2vol","title":"Legends of the Jews (JPS Classic Reissues, 2 volumes)","author":"Louis Ginzberg","publisher":"Jewish Publication Society (JPS)","year":"2003","format":"2-volume hardcover set","notes":"Complete, with indexes.","category":"Rabbinic texts","copies":1,"photo":"IMG_2978","cover":"covers/legends-of-the-jews-2vol.jpg","ol_key":"/works/OL2741734W"},{"id":"bdb-lexicon","title":"A Hebrew and English Lexicon of the Old Testament (BDB)","author":"Francis Brown, S. R. Driver, and Charles A. Briggs","publisher":"Oxford University Press / Clarendon Press","year":"1906 (later printing)","format":"Hardcover","notes":"The standard Biblical Hebrew lexicon.","category":"Hebrew language","copies":1,"photo":"IMG_2978","cover":"covers/bdb-lexicon.jpg","ol_key":"/works/OL18347842W"},{"id":"oxford-hebrew-dictionary","title":"The Oxford English-Hebrew / Hebrew-English Dictionary","author":"Ya'acov Levy; Kernerman & Lonnie Kahn","publisher":"Kernerman Publishing / Lonnie Kahn","year":"1994","format":"Hardcover","notes":"","category":"Hebrew language","copies":2,"photo":"IMG_2978","cover":null,"ol_key":null},{"id":"websters-hebrew-dictionary","title":"Webster's New World Hebrew Dictionary","author":"Hayim Baltsan","publisher":"Webster's New World / Prentice Hall","year":"1992","format":"Hardcover","notes":"","category":"Hebrew language","copies":1,"photo":"IMG_2978","cover":"covers/websters-hebrew-dictionary.jpg","ol_key":"/works/OL2381376W"},{"id":"jewish-ceremonial-art-kanof","title":"Jewish Ceremonial Art and Religious Observance","author":"Abram Kanof","publisher":"Harry N. Abrams","year":"1969","format":"Hardcover, oversized","notes":"","category":"Art","copies":1,"photo":"IMG_2978","cover":"covers/jewish-ceremonial-art-kanof.jpg","ol_key":"/works/OL13057490W"},{"id":"jewish-art-and-civilization","title":"Jewish Art and Civilization","author":"Edited by Geoffrey Wigoder","publisher":"Walker / Chartwell","year":"1972","format":"Hardcover, oversized","notes":"","category":"Art","copies":1,"photo":"IMG_2978","cover":"covers/jewish-art-and-civilization.jpg","ol_key":"/works/OL3931893W"},{"id":"chagall-and-the-bible","title":"Chagall and the Bible","author":"Jean Bloch Rosensaft","publisher":"The Jewish Museum / Universe Books","year":"1987","format":"Hardcover","notes":"Exhibition catalog.","category":"Art","copies":1,"photo":"IMG_2978","cover":"covers/chagall-and-the-bible.jpg","ol_key":"/works/OL5277050W"},{"id":"one-hundred-works-on-paper","title":"One Hundred Works on Paper from the Collection of the Israel Museum, Jerusalem","author":"Meira Perry-Lehmann","publisher":"The Israel Museum / Harry N. Abrams","year":"1986","format":"Hardcover, oversized","notes":"","category":"Art","copies":1,"photo":"IMG_2978","cover":null,"ol_key":null},{"id":"great-jewish-quotes","title":"Great Jewish Quotes","author":"Noah benShea","publisher":"Ballantine Books","year":"1993","format":"Hardcover, small format","notes":"Shelved behind other books; spine partly hidden.","category":"General Judaica","copies":1,"photo":"IMG_2979","cover":"covers/great-jewish-quotes.jpg","ol_key":"/works/OL19853458W"},{"id":"idiots-guide-jewish-history","title":"The Complete Idiot's Guide to Jewish History and Culture","author":"Rabbi Benjamin Blech","publisher":"Alpha Books","year":"1999 (2nd ed. 2004)","format":"Paperback","notes":"","category":"History","copies":1,"photo":"IMG_2979","cover":"covers/idiots-guide-jewish-history.jpg","ol_key":"/works/OL269250W"},{"id":"timetables-of-jewish-history","title":"The Timetables of Jewish History","author":"Judah Gribetz with Edward L. Greenstein and Regina Stein","publisher":"Simon & Schuster","year":"1993","format":"Hardcover","notes":"A chronology of the most important people and events in Jewish history.","category":"History","copies":1,"photo":"IMG_2979","cover":"covers/timetables-of-jewish-history.jpg","ol_key":"/works/OL3922462W"},{"id":"encyclopedia-of-jewish-history","title":"Encyclopedia of Jewish History: Events and Eras of the Jewish People","author":"Edited by Ilana Shamir and Shlomo Shavit","publisher":"Facts on File","year":"1986","format":"Hardcover","notes":"","category":"History","copies":1,"photo":"IMG_2979","cover":null,"ol_key":"/works/OL18276862W"},{"id":"historical-atlas-jewish-people-knopf","title":"A Historical Atlas of the Jewish People (Knopf edition)","author":"Edited by Eli Barnavi","publisher":"Alfred A. Knopf","year":"1992","format":"Hardcover, oversized","notes":"From the time of the Patriarchs to the present.","category":"History","copies":2,"photo":"IMG_2979","cover":"covers/historical-atlas-jewish-people-knopf.jpg","ol_key":"/works/OL18277362W"},{"id":"historical-atlas-jewish-people-schocken","title":"A Historical Atlas of the Jewish People (Schocken revised edition)","author":"Edited by Eli Barnavi; English edition edited by Miriam Eliav-Feldon","publisher":"Schocken Books","year":"2002","format":"Hardcover, oversized","notes":"Updated edition.","category":"History","copies":2,"photo":"IMG_2980","cover":"covers/historical-atlas-jewish-people-schocken.jpg","ol_key":"/works/OL18277362W"},{"id":"shengold-jewish-encyclopedia","title":"The Shengold Jewish Encyclopedia","author":"Mordecai Schreiber, Alvin I. Schiff, and Leon Klenicki","publisher":"Schreiber Publishing","year":"1998 (3rd ed. 2003)","format":"Hardcover","notes":"","category":"Reference","copies":2,"photo":"IMG_2979","cover":"covers/shengold-jewish-encyclopedia.jpg","ol_key":"/works/OL23744475W"},{"id":"jewish-literacy","title":"Jewish Literacy: The Most Important Things to Know About the Jewish Religion, Its People, and Its History","author":"Rabbi Joseph Telushkin","publisher":"William Morrow","year":"1991 (revised 2001)","format":"Hardcover","notes":"","category":"General Judaica","copies":2,"photo":"IMG_2979","cover":"covers/jewish-literacy.jpg","ol_key":"/works/OL2637267W"},{"id":"teaching-jewish-history","title":"Teaching Jewish History","author":"Julia Phillips Berger and Sue Parker Gerson","publisher":"A.R.E. Publishing","year":"2005","format":"Paperback","notes":"Teacher resource.","category":"Education","copies":1,"photo":"IMG_2981","cover":"covers/teaching-jewish-history.jpg","ol_key":"/works/OL23989702W"},{"id":"jewish-history-big-picture","title":"Jewish History: The Big Picture","author":"Gila Gevirtz","publisher":"Behrman House","year":"2008","format":"Paperback","notes":"Middle-school textbook.","category":"Education","copies":1,"photo":"IMG_2981","cover":null,"ol_key":"/works/OL8706632W"},{"id":"history-of-the-jewish-people-sarna","title":"The History of the Jewish People: A Story of Tradition and Change (Vols. 1 & 2)","author":"Jonathan D. Sarna and Jonathan B. Krasner","publisher":"Behrman House","year":"2006","format":"2 paperback volumes","notes":"Middle-school textbook series.","category":"Education","copies":1,"photo":"IMG_2981","cover":"covers/history-of-the-jewish-people-sarna.jpg","ol_key":"/works/OL9547556W"},{"id":"historical-atlas-of-israel","title":"Carta's Historical Atlas of Israel","author":"Carta, Jerusalem","publisher":"Carta","year":"1977 (later printing)","format":"Paperback","notes":"Thin paperback atlas.","category":"History","copies":1,"photo":"IMG_2981","cover":null,"ol_key":"/works/OL11538022W"},{"id":"masters-of-the-talmud","title":"Masters of the Talmud: Their Lives and Views","author":"Alfred J. Kolatch","publisher":"Jonathan David Publishers","year":"2003","format":"Hardcover","notes":"","category":"Rabbinic texts","copies":1,"photo":"IMG_2981","cover":"covers/masters-of-the-talmud.jpg","ol_key":"/works/OL449336W"},{"id":"jewish-contribution-20th-century","title":"The Jewish Contribution to the 20th Century","author":"Alan Symons","publisher":"Polo Publishing","year":"1997","format":"Hardcover","notes":"","category":"History","copies":1,"photo":"IMG_2981","cover":"covers/jewish-contribution-20th-century.jpg","ol_key":"/works/OL7819092W"},{"id":"dictionary-of-jewish-biography","title":"Dictionary of Jewish Biography","author":"Geoffrey Wigoder","publisher":"Simon & Schuster","year":"1991","format":"Hardcover","notes":"","category":"Reference","copies":1,"photo":"IMG_2981","cover":"covers/dictionary-of-jewish-biography.jpg","ol_key":"/works/OL3931883W"},{"id":"guide-jewish-genealogy-poland","title":"A Guide to Jewish Genealogy in Poland (Revised)","author":"Susan Fifer","publisher":"Jewish Genealogical Society of Great Britain","year":"","format":"Paperback","notes":"","category":"Genealogy","copies":1,"photo":"IMG_2981","cover":null,"ol_key":"/works/OL31803689W"},{"id":"encyclopedia-of-jewish-genealogy","title":"The Encyclopedia of Jewish Genealogy, Vol. 1: Sources in the United States and Canada","author":"Edited by Arthur Kurzweil and Miriam Weiner","publisher":"Jason Aronson","year":"1991","format":"Hardcover","notes":"","category":"Genealogy","copies":1,"photo":"IMG_2981","cover":"covers/encyclopedia-of-jewish-genealogy.jpg","ol_key":"/works/OL15855196W"},{"id":"dictionary-english-hebrew-first-names","title":"The Complete Dictionary of English and Hebrew First Names","author":"Alfred J. Kolatch","publisher":"Jonathan David Publishers","year":"1984","format":"Hardcover","notes":"","category":"Reference","copies":1,"photo":"IMG_2981","cover":"covers/dictionary-english-hebrew-first-names.jpg","ol_key":"/works/OL449322W"},{"id":"atlas-medieval-jewish-history","title":"Atlas of Medieval Jewish History","author":"Haim Beinart","publisher":"Carta / Simon & Schuster","year":"1992","format":"Hardcover, oversized","notes":"","category":"History","copies":1,"photo":"IMG_2981","cover":"covers/atlas-medieval-jewish-history.jpg","ol_key":"/works/OL3825096W"},{"id":"smoke-and-ashes","title":"Smoke and Ashes: The Story of the Holocaust","author":"Barbara Rogasky","publisher":"Holiday House","year":"1988 (revised 2002)","format":"Hardcover","notes":"Young-adult history.","category":"Holocaust","copies":1,"photo":"IMG_2982","cover":"covers/smoke-and-ashes.jpg","ol_key":"/works/OL3474382W"},{"id":"holocaust-dk","title":"Holocaust (DK)","author":"Angela Gluck Wood","publisher":"DK Publishing","year":"2007","format":"Hardcover, illustrated","notes":"Includes DVD in some printings.","category":"Holocaust","copies":1,"photo":"IMG_2982","cover":"covers/holocaust-dk.jpg","ol_key":"/works/OL8480246W"},{"id":"image-before-my-eyes","title":"Image Before My Eyes: A Photographic History of Jewish Life in Poland, 1864–1939","author":"Lucjan Dobroszycki and Barbara Kirshenblatt-Gimblett","publisher":"Schocken Books","year":"1977","format":"Hardcover, oversized","notes":"","category":"History","copies":1,"photo":"IMG_2982","cover":"covers/image-before-my-eyes.jpg","ol_key":"/works/OL3480504W"},{"id":"israel-50","title":"Israel: 50 Years","author":"Magnum Photographers; essay by Amos Elon","publisher":"Aperture","year":"1998","format":"Hardcover, oversized","notes":"Fiftieth-anniversary photographic volume by Magnum photographers.","category":"Israel","copies":1,"photo":"IMG_2982","cover":"covers/israel-50.jpg","ol_key":"/works/OL8482771W"},{"id":"to-the-promised-land","title":"To the Promised Land: A History of Zionism","author":"Uri Dan","publisher":"Doubleday","year":"1988","format":"Hardcover, oversized","notes":"","category":"Israel","copies":1,"photo":"IMG_2982","cover":"covers/to-the-promised-land.jpg","ol_key":"/works/OL15857016W"},{"id":"israel-landscapes-hebrew","title":"Israel photo album (Hebrew)","author":"","publisher":"","year":"","format":"Hardcover, Hebrew text","notes":"Hebrew-language photographic book about Israel; title not fully legible (shelf label 958.2 MAR).","category":"Israel","copies":1,"photo":"IMG_2982","cover":null,"ol_key":null},{"id":"encyclopedia-american-jewish-history","title":"Encyclopedia of American Jewish History","author":"Edited by Stephen H. Norwood and Eunice G. Pollack","publisher":"ABC-CLIO","year":"2008","format":"2-volume hardcover set","notes":"","category":"Reference","copies":1,"photo":"IMG_2982","cover":"covers/encyclopedia-american-jewish-history.jpg","ol_key":"/works/OL18210050W"},{"id":"lchaim-jewish-life-america","title":"L'Chaim! To Jewish Life in America: Celebrating from 1654 Until Today","author":"Susan Goldman Rubin","publisher":"Harry N. Abrams","year":"2004","format":"Hardcover, illustrated","notes":"","category":"History","copies":1,"photo":"IMG_2982","cover":"covers/lchaim-jewish-life-america.jpg","ol_key":"/works/OL15119965W"},{"id":"hebrew-fiction-lot","title":"Hebrew-language fiction for children and teens (shelf lot, about 25 books)","author":"Various, including Ruth Almog, Gila Almagor, Devorah Omer, Uri Orlev, Galila Ron-Feder-Amit, and a Hebrew translation of Little Lord Fauntleroy","publisher":"Various Israeli publishers (Zmora-Bitan, Keter, Am Oved, Yediot, Dvir)","year":"1980s–2000s","format":"Mixed hardcover and paperback, Hebrew","notes":"Offered as one lot. Shelf labels F ALM, F AVI, F BRO, F BUR, F CHA, F DIA, F FRE, F LEG, F MEI, F NAO, F OFE, F OME, F ORL, F OTZ, F TWA, F UNG, F YAH, F FED. Best for a Hebrew-reading family or classroom library.","category":"Hebrew fiction","copies":1,"photo":"IMG_2983","cover":null,"ol_key":null},{"id":"promised-land-eban-wetmore","title":"Promised Land","author":"Text by Abba Eban, paintings by Gordon Wetmore, foreword by Leon Uris","publisher":"Thomas Nelson","year":"1978","format":"Hardcover, oversized, with dust jacket","notes":"Watercolor portrait of Israel.","category":"Israel","copies":1,"photo":"IMG_2984","cover":"covers/promised-land-eban-wetmore.jpg","ol_key":"/works/OL2725440W"},{"id":"living-torah-kaplan","title":"The Living Torah: The Five Books of Moses and the Haftarot","author":"Rabbi Aryeh Kaplan","publisher":"Moznaim Publishing","year":"1981","format":"Hardcover, Hebrew/English","notes":"","category":"Bible & commentary","copies":1,"photo":"IMG_2985","cover":"covers/living-torah-kaplan.jpg","ol_key":"/works/OL20944376W"},{"id":"torah-modern-commentary-plaut","title":"The Torah: A Modern Commentary, Revised Edition","author":"W. Gunther Plaut; revised edition edited by David E. S. Stein","publisher":"URJ Press","year":"2005","format":"Hardcover","notes":"The Reform Movement's standard Torah commentary.","category":"Bible & commentary","copies":1,"photo":"IMG_2985","cover":null,"ol_key":null},{"id":"new-union-prayer-book","title":"Gates of Prayer: The New Union Prayer Book — Weekdays, Sabbaths, and Festivals","author":"Edited by Chaim Stern","publisher":"Central Conference of American Rabbis (CCAR)","year":"1975","format":"Hardcover, blue","notes":"","category":"Liturgy","copies":1,"photo":"IMG_2985","cover":"covers/new-union-prayer-book.jpg","ol_key":"/works/OL17924169W"},{"id":"mekilta-lauterbach","title":"Mekilta de-Rabbi Ishmael (3 volumes)","author":"Translated by Jacob Z. Lauterbach","publisher":"Jewish Publication Society (JPS)","year":"1933–1935 (paperback reprint 1976)","format":"3 paperback volumes, Hebrew/English","notes":"Critical edition of the halakhic midrash on Exodus.","category":"Rabbinic texts","copies":1,"photo":"IMG_2985","cover":"covers/mekilta-lauterbach.jpg","ol_key":"/works/OL8586164W"},{"id":"mishneh-torah-shabbat","title":"Mishneh Torah: Hilchot Shabbat I and II (Moznaim Rambam)","author":"Maimonides (Rambam); translated by Rabbi Eliyahu Touger","publisher":"Moznaim Publishing","year":"1993","format":"4 volumes: two copies each of Shabbat I and Shabbat II, Hebrew/English","notes":"","category":"Rabbinic texts","copies":1,"photo":"IMG_2985","cover":null,"ol_key":null},{"id":"tell-it-from-the-torah","title":"Tell It From the Torah, Volume II","author":"Gedalia Peterseil","publisher":"Pitspopany Press","year":"2000","format":"Paperback","notes":"Weekly Torah portion stories for families.","category":"Education","copies":1,"photo":"IMG_2985","cover":"covers/tell-it-from-the-torah.jpg","ol_key":"/works/OL5769447W"},{"id":"babylonian-talmud-rodkinson","title":"The Babylonian Talmud (Rodkinson English Edition)","author":"Translated by Michael L. Rodkinson","publisher":"The Talmud Society, Boston","year":"1918","format":"9 of 10 volumes: 1, 2, 3, 5, 6, 7, 8, 9, 10 (volume 4 missing), green cloth","notes":"Sabbath, Festivals I–II, Jurisprudence I–V, History. Antique set, some wear.","category":"Rabbinic texts","copies":1,"photo":"IMG_2987","cover":"covers/babylonian-talmud-rodkinson.jpg","ol_key":"/works/OL15865475W"},{"id":"encyclopaedia-judaica-year-books","title":"Encyclopaedia Judaica Year Books: 1973, 1974, 1975–76, 1977–78","author":"Keter Publishing House","publisher":"Keter Publishing House, Jerusalem","year":"1973–1978","format":"4 hardcover volumes","notes":"Annual supplements to the first-edition Encyclopaedia Judaica.","category":"Encyclopedias","copies":1,"photo":"IMG_2988","cover":"covers/encyclopaedia-judaica-year-books.jpg","ol_key":"/works/OL16197988W"},{"id":"jewish-encyclopedia-funk-wagnalls","title":"The Jewish Encyclopedia (Funk & Wagnalls), 6 volumes","author":"Edited by Isidore Singer","publisher":"Funk & Wagnalls Company","year":"1901–1906","format":"6 of 12 volumes: II, III, VII, IX, XI, XII; leather-backed, worn","notes":"Antique. Volumes II (Apocrypha–Benash), III (Bencemero–Chazanuth), VII (Leon–Moravia), IX (Morawczyk–Philippson), XI (Samson–Talmid), XII (Talmud–Zweifel). Bindings show wear.","category":"Encyclopedias","copies":1,"photo":"IMG_2989","cover":"covers/jewish-encyclopedia-funk-wagnalls.jpg","ol_key":"/works/OL24374674W"},{"id":"new-illustrated-encyclopedia-world-history","title":"The New Illustrated Encyclopedia of World History (2 volumes)","author":"Compiled and edited by William L. Langer","publisher":"Harry N. Abrams","year":"1972","format":"2 hardcover volumes","notes":"","category":"Encyclopedias","copies":1,"photo":"IMG_2990","cover":"covers/new-illustrated-encyclopedia-world-history.jpg","ol_key":"/works/OL5632466W"},{"id":"junior-judaica","title":"Junior Judaica: Encyclopaedia Judaica for Youth","author":"Keter Publishing House","publisher":"Keter Publishing House, Jerusalem","year":"1982","format":"5 of 6 volumes: 1, 2, 3, 5, 6 (volume 4 missing)","notes":"","category":"Encyclopedias","copies":1,"photo":"IMG_2990","cover":"covers/junior-judaica.jpg","ol_key":"/works/OL180385W"},{"id":"universal-jewish-encyclopedia","title":"The Universal Jewish Encyclopedia (10 volumes)","author":"Edited by Isaac Landman","publisher":"The Universal Jewish Encyclopedia, Inc., New York","year":"1939–1943","format":"Complete 10-volume set, blue cloth","notes":"Volume 9 spine is faded.","category":"Encyclopedias","copies":1,"photo":"IMG_2990","cover":"covers/universal-jewish-encyclopedia.jpg","ol_key":"/works/OL24857691W"},{"id":"encyclopaedia-judaica-2nd-edition","title":"Encyclopaedia Judaica, Second Edition (22 volumes)","author":"Edited by Fred Skolnik and Michael Berenbaum","publisher":"Macmillan Reference USA / Thomson Gale","year":"2007","format":"Complete 22-volume hardcover set, including Thematic Outline and Index","notes":"Excellent condition. The current standard English-language Jewish encyclopedia.","category":"Encyclopedias","copies":1,"photo":"IMG_2991","cover":"covers/encyclopaedia-judaica-2nd-edition.jpg","ol_key":"/works/OL17886258W"},{"id":"encyclopaedia-judaica-1st-set-a","title":"Encyclopaedia Judaica, First Edition (set A: 16 volumes + Supplement + Decennial Book 1983–92)","author":"Edited by Cecil Roth and Geoffrey Wigoder","publisher":"Keter Publishing House, Jerusalem / Macmillan","year":"1972","format":"18 hardcover volumes: Index (vol. 1), vols. 2–16, vol. 17 Supplement, Decennial Book 1983–92","notes":"","category":"Encyclopedias","copies":1,"photo":"IMG_2993","cover":"covers/encyclopaedia-judaica-1st-set-a.jpg","ol_key":"/works/OL42937403W"},{"id":"encyclopaedia-judaica-1st-set-b","title":"Encyclopaedia Judaica, First Edition (set B: 16 volumes + Decennial Books 1973–82 and 1983–92)","author":"Edited by Cecil Roth and Geoffrey Wigoder","publisher":"Keter Publishing House, Jerusalem / Macmillan","year":"1972","format":"18 hardcover volumes: Index (vol. 1), vols. 2–16, Decennial Book 1973–82, Decennial Book 1983–92","notes":"","category":"Encyclopedias","copies":1,"photo":"IMG_2995","cover":"covers/encyclopaedia-judaica-1st-set-b.jpg","ol_key":"/works/OL42937403W"}]</script>
+<script>
+(function () {
+  const CFG = window.CONFIG || {};
+  const BOOKS = JSON.parse(document.getElementById('books-data').textContent);
+  const $ = (s) => document.querySelector(s);
+  const byId = Object.fromEntries(BOOKS.map(b => [b.id, b]));
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const store = {
+    get(k, d) { try { const v = sessionStorage.getItem(k) ?? localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+    session(k, v) { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch {} },
+    local(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  };
+
+  const state = {
+    picks: new Set(), res: {}, cat: 'All', q: '', sort: 'shelf', onlyAvail: false, adminSort: 'person',
+    api: !!CFG.API_URL, admin: store.get('rehoming-admin', '') || '', tokens: store.get('rehoming-tokens', {}), syncing: false,
+  };
+
+  // ---------- gate ----------
+  function openApp() { $('#gate').hidden = true; $('#app').hidden = false; }
+  if (!CFG.PASSPHRASE || store.get('rehoming-pass', '') === CFG.PASSPHRASE) openApp();
+  $('#gate-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const v = $('#gate-pass').value.trim();
+    if (v.toLowerCase() === String(CFG.PASSPHRASE).toLowerCase()) { store.session('rehoming-pass', CFG.PASSPHRASE); openApp(); loadReservations(); }
+    else $('#gate-err').innerHTML = '<div class="alert err">That passphrase is not right. Check the invitation and try again.</div>';
+  });
+
+  // ---------- helpers ----------
+  const slotsOf = (b) => Array.from({length: b.copies || 1}, (_, i) => `${b.id}~${i + 1}`);
+  const takenSlots = (b) => slotsOf(b).filter(s => state.res[s]);
+  const freeSlots = (b) => slotsOf(b).filter(s => !state.res[s]);
+  const mine = (slot) => !!state.tokens[slot];
+  const firstName = (n) => (n || '').trim().split(/\s+/)[0] || 'Someone';
+  const infoLink = (b) => b.ol_key ? `https://openlibrary.org${b.ol_key}` : `https://www.google.com/search?tbm=bks&q=${encodeURIComponent(b.title + ' ' + (b.author || ''))}`;
+  const fmtDate = (iso) => { try { return new Date(iso).toLocaleString(undefined, {dateStyle: 'medium', timeStyle: 'short'}); } catch { return iso; } };
+  let toastT; const toast = (m) => { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2800); };
+
+  // ---------- API ----------
+  async function api(params, body) {
+    if (!CFG.API_URL) throw new Error('no_api');
+    let r;
+    if (body) {
+      r = await fetch(CFG.API_URL, { method: 'POST', body: JSON.stringify({ ...body, key: CFG.PASSPHRASE, admin: state.admin || undefined }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
+    } else {
+      const u = new URL(CFG.API_URL); u.searchParams.set('key', CFG.PASSPHRASE); if (state.admin) u.searchParams.set('admin', state.admin);
+      Object.entries(params || {}).forEach(([k, v]) => u.searchParams.set(k, v));
+      r = await fetch(u.toString(), { method: 'GET' });
+    }
+    const j = await r.json();
+    if (j.error) throw Object.assign(new Error(j.error), { code: j.error });
+    return j;
+  }
+  function applyList(list) {
+    const next = {}; (list || []).forEach(r => { next[r.slot] = r; }); state.res = next;
+    [...state.picks].forEach(id => { if (byId[id] && freeSlots(byId[id]).length === 0) state.picks.delete(id); });
+    render();
+  }
+  async function loadReservations() {
+    if (!state.api || $('#app').hidden) return;
+    state.syncing = true; $('#sync').textContent = 'Checking what is still available…';
+    try { const j = await api({ action: 'list' }); applyList(j.reservations); state.isAdminOk = !!j.admin; if (j.admin) showAdminTab(); }
+    catch (e) { $('#sync').textContent = 'Could not reach the reservation list. Reservations still work; the page will retry.'; return; }
+    finally { state.syncing = false; }
+    $('#sync').textContent = '';
+  }
+
+  // ---------- catalog rendering ----------
+  const cats = ['All', ...Array.from(new Set(BOOKS.map(b => b.category))).sort()];
+  function renderChips() { $('#chips').innerHTML = cats.map(c => `<button class="chip" type="button" data-cat="${esc(c)}" aria-pressed="${c === state.cat}">${esc(c)}</button>`).join(''); }
+  function visibleBooks() {
+    const q = state.q.trim().toLowerCase();
+    let list = BOOKS.filter(b => (state.cat === 'All' || b.category === state.cat))
+      .filter(b => !q || [b.title, b.author, b.publisher, b.notes, b.format, b.year].join(' ').toLowerCase().includes(q))
+      .filter(b => !state.onlyAvail || freeSlots(b).length > 0);
+    const key = { title: b => b.title, author: b => (b.author || 'zzz'), year: b => parseInt(b.year) || 9999 }[state.sort];
+    if (key) list = [...list].sort((a, b) => key(a) > key(b) ? 1 : key(a) < key(b) ? -1 : 0);
+    return list;
+  }
+  function renderStats() {
+    const total = BOOKS.length, copies = BOOKS.reduce((n, b) => n + (b.copies || 1), 0), taken = Object.keys(state.res).length;
+    $('#stats').innerHTML = `<span><b>${total}</b> titles and sets</span><span><b>${copies}</b> copies</span><span><b>${copies - taken}</b> still available</span><span><b>${taken}</b> reserved</span>`;
+  }
+  function renderGrid() {
+    const list = visibleBooks();
+    if (!list.length) { $('#grid').innerHTML = `<div class="empty" style="grid-column:1/-1">No books match. Clear the search or filter to see the rest.</div>`; return; }
+    $('#grid').innerHTML = list.map(b => {
+      const free = freeSlots(b), taken = takenSlots(b);
+      const img = b.cover || `spines/${b.id}.jpg`;
+      const mySlot = taken.find(mine);
+      let status = '';
+      if (taken.length) status += `<span class="badge taken">Reserved by ${esc(taken.map(s => firstName(state.res[s].name)).join(', '))}</span> `;
+      if ((b.copies || 1) > 1) status += `<span class="badge left">${free.length} of ${b.copies} left</span>`;
+      const soldOut = free.length === 0;
+      const checked = state.picks.has(b.id) ? 'checked' : '';
+      const releaseBtn = mySlot ? `<button type="button" class="release" data-release="${esc(mySlot)}">Release my reservation</button>` : '';
+      const pickLabel = soldOut ? 'All copies reserved' : (checked ? 'Selected to reserve' : 'Reserve this');
+      return `<article class="card ${soldOut ? 'reserved-out' : ''}" data-id="${esc(b.id)}">
+        <a class="pic" href="shelves/${esc(b.photo)}.jpg" target="_blank" rel="noopener" title="Open the shelf photo"><img src="${esc(img)}" alt="" loading="lazy"></a>
+        <div class="body">
+          <div class="cat">${esc(b.category)}</div>
+          <h3>${esc(b.title)}</h3>
+          ${b.author ? `<div class="author">${esc(b.author)}</div>` : ''}
+          <div class="meta">${[b.publisher, b.year].filter(Boolean).map(esc).join(' · ')}${b.format ? `<br>${esc(b.format)}` : ''}</div>
+          ${b.notes ? `<div class="notes">${esc(b.notes)}</div>` : ''}
+          <div class="links"><a href="${infoLink(b)}" target="_blank" rel="noopener">${b.ol_key ? 'More about this book' : 'Search for this book'}</a><a href="shelves/${esc(b.photo)}.jpg" target="_blank" rel="noopener">Shelf photo</a></div>
+          <div>${status}</div>
+          ${releaseBtn}
+          <label class="pick"><input type="checkbox" data-pick="${esc(b.id)}" ${checked} ${soldOut ? 'disabled' : ''}> <span>${pickLabel}</span></label>
+        </div>
+      </article>`;
+    }).join('');
+  }
+  function renderBar() {
+    const n = state.picks.size;
+    $('#bar').classList.toggle('on', n > 0);
+    $('#bar-count').textContent = `${n} selected`;
+    const titles = [...state.picks].map(id => byId[id].title);
+    $('#bar-titles').textContent = titles.length ? ' · ' + titles.slice(0, 2).join('; ') + (titles.length > 2 ? ` and ${titles.length - 2} more` : '') : '';
+  }
+  function renderAccessNote() {
+    $('#access-note').innerHTML = state.api ? '' : `<div class="alert warn" style="margin-bottom:14px">Online reservations are not switched on yet. Tick the books you want and use <b>Reserve selected</b> to get a list you can copy and email to <b>${esc(CFG.CONTACT || 'the person who shared this link')}</b>.</div>`;
+    $('#footer-contact').innerHTML = CFG.CONTACT ? `Questions? Email <a href="mailto:${esc(CFG.CONTACT)}">${esc(CFG.CONTACT)}</a>` : '';
+  }
+  function render() { renderStats(); renderGrid(); renderBar(); renderAccessNote(); if (!$('#view-admin').hidden) renderAdmin(); }
+
+  // ---------- events ----------
+  $('#chips').addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (!b) return; state.cat = b.dataset.cat; renderChips(); renderGrid(); });
+  $('#q').addEventListener('input', e => { state.q = e.target.value; renderGrid(); });
+  $('#sort').addEventListener('change', e => { state.sort = e.target.value; renderGrid(); });
+  $('#only-available').addEventListener('change', e => { state.onlyAvail = e.target.checked; renderGrid(); });
+  $('#grid').addEventListener('change', e => {
+    const cb = e.target.closest('[data-pick]'); if (!cb) return;
+    if (cb.checked) state.picks.add(cb.dataset.pick); else state.picks.delete(cb.dataset.pick);
+    cb.nextElementSibling.textContent = cb.checked ? 'Selected to reserve' : 'Reserve this';
+    renderBar();
+  });
+  $('#grid').addEventListener('click', e => { const r = e.target.closest('[data-release]'); if (r) release(r.dataset.release); });
+  $('#bar-clear').addEventListener('click', () => { state.picks.clear(); renderGrid(); renderBar(); });
+  $('#bar-reserve').addEventListener('click', openPanel);
+  $('#panel-cancel').addEventListener('click', closePanel);
+  $('#scrim').addEventListener('click', e => { if (e.target === $('#scrim')) closePanel(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closePanel(); $('#admin-scrim').classList.remove('on'); } });
+  $('#panel').addEventListener('submit', e => { e.preventDefault(); submitReservation(); });
+  $('#tab-catalog').addEventListener('click', () => showTab('catalog'));
+  $('#tab-admin').addEventListener('click', () => showTab('admin'));
+  $('#admin-sort').addEventListener('change', e => { state.adminSort = e.target.value; renderAdmin(); });
+  $('#copy-all').addEventListener('click', () => copyText(adminText(), 'Reservation list copied'));
+  $('#csv').addEventListener('click', downloadCsv);
+  $('#admin-body').addEventListener('click', e => { const r = e.target.closest('[data-release]'); if (r) release(r.dataset.release, true); });
+  $('#admin-login').addEventListener('click', () => { $('#admin-err').innerHTML = ''; $('#admin-scrim').classList.add('on'); setTimeout(() => $('#admin-key').focus(), 30); });
+  $('#admin-cancel').addEventListener('click', () => $('#admin-scrim').classList.remove('on'));
+  $('#admin-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const key = $('#admin-key').value.trim(); if (!key) return;
+    const prev = state.admin; state.admin = key;
+    try {
+      const j = await api({ action: 'list' });
+      if (!j.admin) throw new Error('bad');
+      store.session('rehoming-admin', key); applyList(j.reservations); showAdminTab(); $('#admin-scrim').classList.remove('on'); showTab('admin'); toast('Signed in as admin');
+    } catch (err) {
+      state.admin = prev;
+      $('#admin-err').innerHTML = `<div class="alert err">${state.api ? 'That key was not accepted.' : 'The reservation backend is not connected yet (API_URL is empty in config.js).'}</div>`;
+    }
+  });
+  function showAdminTab() { $('#tab-admin').hidden = false; if (CFG.SHEET_URL) { $('#sheet-link').href = CFG.SHEET_URL; $('#sheet-link').hidden = false; } $('#admin-login').textContent = 'Admin: signed in'; }
+  function showTab(which) {
+    const admin = which === 'admin';
+    $('#view-catalog').hidden = admin; $('#view-admin').hidden = !admin;
+    $('#tab-catalog').setAttribute('aria-selected', String(!admin));
+    $('#tab-admin').setAttribute('aria-selected', String(admin));
+    if (admin) renderAdmin();
+  }
+  { const d = store.get('rehoming-draft', {}); if (d.name) $('#name').value = d.name; if (d.email) $('#email').value = d.email; }
+
+  // ---------- reserve panel ----------
+  function pickList() { return [...state.picks].map(id => byId[id]).filter(Boolean); }
+  function picksText(name, email) {
+    const lines = pickList().map(b => `• ${b.title}${b.author ? ' — ' + b.author : ''}`);
+    return `Book reservation request${name ? ` from ${name}` : ''}${email ? ` <${email}>` : ''}\n\n${lines.join('\n')}`;
+  }
+  function openPanel() {
+    const list = pickList(); if (!list.length) return;
+    $('#panel-list').innerHTML = list.map(b => `<li>${esc(b.title)}</li>`).join('');
+    $('#panel-status').innerHTML = '';
+    $('#panel-go').hidden = false;
+    $('#panel-mode').innerHTML = state.api ? '' : `<div class="alert warn">Online reservations are not switched on yet. Fill in your name and email, then copy the list and email it to <b>${esc(CFG.CONTACT || 'the organizer')}</b>.</div>`;
+    $('#panel-go').textContent = state.api ? 'Confirm reservation' : 'Show list to copy';
+    $('#scrim').classList.add('on');
+    setTimeout(() => $('#name').focus(), 30);
+  }
+  function closePanel() { $('#scrim').classList.remove('on'); }
+
+  async function submitReservation() {
+    const name = $('#name').value.trim(), email = $('#email').value.trim();
+    if (!name || !email) return;
+    store.local('rehoming-draft', {name, email});
+    const status = $('#panel-status');
+    if (!state.api) {
+      status.innerHTML = `<textarea class="copy" id="copy-box" readonly>${esc(picksText(name, email))}</textarea><div class="row" style="justify-content:flex-start;margin-top:8px"><button type="button" class="btn quiet" id="copy-btn">Copy to clipboard</button>${CFG.CONTACT ? `<a class="btn quiet" href="mailto:${esc(CFG.CONTACT)}?subject=${encodeURIComponent('Book reservation request')}&body=${encodeURIComponent(picksText(name, email))}">Open in email</a>` : ''}</div>`;
+      $('#copy-btn').addEventListener('click', () => copyText(picksText(name, email), 'Copied. Paste it into an email.'));
+      $('#panel-go').hidden = true;
+      return;
+    }
+    const go = $('#panel-go'); go.disabled = true; go.textContent = 'Reserving…'; status.innerHTML = '';
+    try {
+      const j = await api(null, { action: 'reserve', name, email, picks: pickList().map(b => ({ bookId: b.id, title: b.title, copies: b.copies || 1 })) });
+      (j.reserved || []).forEach(r => { state.tokens[r.slot] = j.token; state.picks.delete(r.bookId); });
+      store.local('rehoming-tokens', state.tokens);
+      applyList(j.reservations);
+      const got = (j.reserved || []).map(r => byId[r.bookId]?.title).filter(Boolean);
+      const missed = (j.missed || []).map(id => byId[id]?.title).filter(Boolean);
+      const parts = [];
+      if (got.length) parts.push(`<div class="alert ok">Reserved ${got.length}: ${got.map(esc).join('; ')}. ${CFG.CONTACT ? `${esc(CFG.CONTACT)} will be in touch about pickup.` : ''}</div>`);
+      if (missed.length) parts.push(`<div class="alert warn">Taken by someone else moments ago: ${missed.map(esc).join('; ')}.</div>`);
+      status.innerHTML = parts.join('');
+      if (!missed.length) { setTimeout(closePanel, 2200); toast(`Reserved ${got.length} ${got.length === 1 ? 'book' : 'books'}. Thank you!`); }
+    } catch (e) {
+      status.innerHTML = `<div class="alert err">Could not save the reservation (${esc(e.code || e.message)}). Try again in a moment, or email ${esc(CFG.CONTACT || 'the organizer')}.</div>`;
+    } finally { go.disabled = false; go.textContent = 'Confirm reservation'; }
+  }
+  async function release(slot, asAdmin) {
+    if (!state.api) return;
+    const token = state.tokens[slot];
+    if (!asAdmin && !token) return;
+    try {
+      const j = await api(null, { action: 'release', slot, token });
+      delete state.tokens[slot]; store.local('rehoming-tokens', state.tokens);
+      applyList(j.reservations); toast('Reservation released');
+    } catch (e) { toast('Could not release that reservation'); }
+  }
+
+  // ---------- admin ----------
+  function allRes() { return Object.values(state.res); }
+  function renderAdmin() {
+    const rows = allRes().slice();
+    const people = new Set(rows.map(r => (r.email || r.name || '').toLowerCase()));
+    $('#admin-summary').textContent = rows.length ? `${rows.length} ${rows.length === 1 ? 'reservation' : 'reservations'} by ${people.size} ${people.size === 1 ? 'person' : 'people'}.` : 'No reservations yet. They will appear here as people reserve books.';
+    const body = $('#admin-body');
+    if (!rows.length) { body.innerHTML = `<tr><td colspan="5" class="note" style="padding:24px;text-align:center">Nothing reserved yet.</td></tr>`; return; }
+    const cmp = (a, b) => a > b ? 1 : a < b ? -1 : 0;
+    const pkey = (r) => ((r.name || '') + '|' + (r.email || '')).toLowerCase();
+    if (state.adminSort === 'when') rows.sort((a, b) => cmp(b.at, a.at));
+    else if (state.adminSort === 'book') rows.sort((a, b) => cmp((a.title || '').toLowerCase(), (b.title || '').toLowerCase()));
+    else rows.sort((a, b) => cmp(pkey(a), pkey(b)) || cmp(a.at, b.at));
+    let html = '', last = null;
+    for (const r of rows) {
+      if (state.adminSort === 'person' && pkey(r) !== last) {
+        const n = rows.filter(x => pkey(x) === pkey(r)).length;
+        html += `<tr class="group"><td colspan="5">${esc(r.name || 'Unnamed')} <span class="note">· ${n} ${n === 1 ? 'book' : 'books'}</span></td></tr>`;
+        last = pkey(r);
+      }
+      const copyNote = (byId[r.bookId]?.copies || 1) > 1 ? ` <span class="note">(copy ${esc(String(r.slot).split('~')[1])})</span>` : '';
+      html += `<tr><td>${esc(r.name)}</td><td>${r.email ? esc(r.email) : '<span class="note">hidden</span>'}</td><td>${esc(r.title)}${copyNote}</td><td class="when">${esc(fmtDate(r.at))}</td><td><button type="button" class="release" data-release="${esc(r.slot)}">Release</button></td></tr>`;
+    }
+    body.innerHTML = html;
+  }
+  function adminText() {
+    const rows = allRes().sort((a, b) => (a.name || '').localeCompare(b.name || '') || String(a.at).localeCompare(String(b.at)));
+    let out = '', last = null;
+    for (const r of rows) { const k = (r.name || '') + (r.email ? ' <' + r.email + '>' : ''); if (k !== last) { out += (out ? '\n' : '') + k + '\n'; last = k; } out += `  - ${r.title}  (${fmtDate(r.at)})\n`; }
+    return out || 'No reservations yet.';
+  }
+  function csvText() {
+    const q = (s) => '"' + String(s ?? '').replace(/"/g, '""') + '"';
+    const rows = allRes().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    return ['Name,Email,Book,Author,Reserved at,Slot', ...rows.map(r => [r.name, r.email || '', r.title, byId[r.bookId]?.author || '', r.at, r.slot].map(q).join(','))].join('\n');
+  }
+  function downloadCsv() {
+    const blob = new Blob([csvText()], {type: 'text/csv'}); const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'book-reservations.csv'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+  async function copyText(text, msg) {
+    try { await navigator.clipboard.writeText(text); toast(msg); }
+    catch { const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); toast(msg); } catch { toast('Select the text and copy it manually'); } document.body.removeChild(ta); }
+  }
+
+  // ---------- boot ----------
+  renderChips(); render();
+  loadReservations();
+  setInterval(loadReservations, 45000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) loadReservations(); });
+})();
+</script>
+</body>
+</html>
